@@ -1,0 +1,609 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Cierre Contable FAVECA</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: encabezado con próximo vencimiento, chips de personas, tres vistas (Mes, Agenda, Rutinas). En Mes, cuadrícula + detalle del día. */
+:root {
+  --bg: #f2f5f8;
+  --surface: #ffffff;
+  --surface2: #e9eef3;
+  --fg: #12202f;
+  --muted: #556577;
+  --line: #d6dee7;
+  --accent: #17476b;
+  --accent-ink: #ffffff;
+  --danger: #b3261e;
+  --danger-bg: #fbe9e7;
+  --p-mar: #5b3fc4;
+  --p-vil: #8a6a00;
+  --p-raq: #1a5fcb;
+  --p-kar: #3f7d1f;
+  --p-dan: #b8245a;
+  --p-yun: #0a7f8a;
+  --p-yam: #c2410c;
+  --font-display: 'Bricolage Grotesque', 'Avenir Next', system-ui, sans-serif;
+  --font-body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1620; --surface: #16212d; --surface2: #1f2c3a; --fg: #e7eef6; --muted: #9bacbe; --line: #273545;
+    --accent: #8cc0ea; --accent-ink: #0e1620; --danger: #ff8a80; --danger-bg: #3a1f1e;
+    --p-mar: #a99bff; --p-vil: #e8c547; --p-raq: #7db1ff; --p-kar: #8fd46a; --p-dan: #ff8fb5; --p-yun: #5fd3de; --p-yam: #ff9a6b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1620; --surface: #16212d; --surface2: #1f2c3a; --fg: #e7eef6; --muted: #9bacbe; --line: #273545;
+  --accent: #8cc0ea; --accent-ink: #0e1620; --danger: #ff8a80; --danger-bg: #3a1f1e;
+  --p-mar: #a99bff; --p-vil: #e8c547; --p-raq: #7db1ff; --p-kar: #8fd46a; --p-dan: #ff8fb5; --p-yun: #5fd3de; --p-yam: #ff9a6b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+.head { display: flex; flex-direction: column; gap: 4px; }
+.head h1 { font-size: clamp(26px, 5vw, 38px); line-height: 1.05; font-weight: 700; letter-spacing: -0.01em; }
+.head p { margin: 0; color: var(--muted); }
+.next {
+  display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; text-align: left; width: 100%;
+  background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 12px; padding: 12px 16px;
+}
+.next .lbl { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; }
+.next .ttl { font-weight: 600; flex: 1 1 220px; min-width: 0; }
+.next .when { font-variant-numeric: tabular-nums; opacity: 0.92; }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; white-space: nowrap;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px 6px 6px;
+}
+.chip.all { padding-left: 14px; }
+.chip small { color: var(--muted); font-size: 12px; }
+.chip[aria-pressed="true"] { border-color: var(--pc, var(--accent)); box-shadow: inset 0 0 0 1px var(--pc, var(--accent)); background: color-mix(in srgb, var(--pc, var(--accent)) 10%, var(--surface)); }
+.av {
+  display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; flex: 0 0 auto;
+  font-size: 11px; font-weight: 600; color: var(--pc);
+  background: color-mix(in srgb, var(--pc) 18%, var(--surface)); border: 1.5px solid var(--pc);
+}
+.tabs { display: flex; gap: 4px; background: var(--surface2); border-radius: 10px; padding: 4px; align-self: flex-start; }
+.tab { border: 0; background: transparent; padding: 7px 16px; border-radius: 7px; font-weight: 500; color: var(--muted); }
+.tab[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.mes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (min-width: 1000px) { .mes { grid-template-columns: minmax(0, 1fr) 380px; } }
+.cal { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.cal-head h2 { font-size: 22px; }
+.seg { display: flex; gap: 4px; }
+.seg button { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 5px 12px; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.dow, .grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.dow span { text-align: center; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 2px 0; }
+.cell {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0;
+  min-height: 58px; padding: 5px; text-align: left; border: 1px solid var(--line); border-radius: 8px; background: var(--bg);
+}
+.cell.blank { visibility: hidden; border: 0; }
+.cell .n { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cell.today .n { background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 0 6px; }
+.cell.holiday { background: var(--surface2); }
+.cell.sel { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); background: var(--surface); }
+.cell .flag { position: absolute; top: 4px; right: 5px; width: 8px; height: 8px; background: var(--danger); border-radius: 2px; transform: rotate(45deg); }
+.dots { display: flex; flex-wrap: wrap; gap: 3px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pc); }
+.lines { display: none; flex-direction: column; gap: 2px; width: 100%; min-width: 0; }
+.lines span { display: block; font-size: 11px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg); }
+.lines .more { color: var(--muted); }
+.hol { font-size: 10px; color: var(--muted); }
+@media (min-width: 760px) {
+  .cell { min-height: 104px; padding: 7px; }
+  .dots { display: none; }
+  .lines { display: flex; }
+}
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 8px; height: 8px; background: var(--danger); border-radius: 2px; transform: rotate(45deg); display: inline-block; }
+.day { display: flex; flex-direction: column; gap: 10px; min-width: 0; scroll-margin-top: 12px; }
+.day > h2 { font-size: 20px; text-transform: capitalize; }
+.day .sub { color: var(--muted); margin: -6px 0 0; font-size: 13px; }
+.ev { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ev.prop { border-style: dashed; }
+.ev h3 { font-size: 17px; line-height: 1.2; }
+.ev p { margin: 0; color: var(--muted); font-size: 14px; }
+.ev-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tag { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.tag.ley { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
+.tag.prop { border-style: dashed; }
+.time, .dl { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ev-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-top: 2px; }
+.whos { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.who { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; }
+.done-btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 5px 12px; font-size: 13px; }
+.done-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.ev.is-done h3 { text-decoration: line-through; opacity: 0.6; }
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 16px; color: var(--muted); display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.link { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.agenda { display: flex; flex-direction: column; gap: 20px; max-width: 760px; }
+.agenda .grp { display: flex; flex-direction: column; gap: 8px; }
+.agenda .grp > h2 { font-size: 18px; text-transform: capitalize; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.agenda .grp > h2 small { font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--muted); text-transform: none; }
+.agenda .grp.past { opacity: 0.6; }
+.agenda .grp.is-today > h2 { color: var(--accent); }
+.rut { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 14px; }
+.pc { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.pc-head { display: flex; align-items: center; gap: 10px; }
+.pc-head .av { width: 36px; height: 36px; font-size: 13px; }
+.pc-head h2 { font-size: 19px; line-height: 1.1; }
+.pc-head span { color: var(--muted); font-size: 13px; }
+.rg h3 { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--pc); font-weight: 600; margin-bottom: 4px; }
+.rg ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.note { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; font-size: 14px; color: var(--muted); max-width: 760px; }
+.note h2 { font-size: 16px; color: var(--fg); margin-bottom: 6px; }
+.note ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.toggle { align-self: flex-start; }
+.seg { flex-wrap: wrap; align-items: center; }
+.seg button:disabled { opacity: 0.4; cursor: default; }
+.msel { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; max-width: 100%; }
+.msel:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <h1>Calendario de cierre contable</h1>
+    <p>FAVECA, C.A. y Transporte Salomé, C.A. · Noviembre 2026 a diciembre 2027 · Régimen ordinario (No SPE)</p>
+  </header>
+  <button class="next" id="next" type="button"></button>
+  <div class="chips" id="chips" role="group" aria-label="Filtrar por persona"></div>
+  <div class="tabs" id="tabs" role="group" aria-label="Vista">
+    <button class="tab" type="button" data-view="mes">Mes</button>
+    <button class="tab" type="button" data-view="agenda">Agenda</button>
+    <button class="tab" type="button" data-view="rutinas">Rutinas</button>
+  </div>
+  <main id="main"></main>
+</div>
+
+<script>
+const PEOPLE = {
+  mar: { n: 'Mariella', d: 'Administración', i: 'Ma' },
+  vil: { n: 'Vilma', d: 'Compras', i: 'Vi' },
+  raq: { n: 'Raquel', d: 'Ventas', i: 'Ra' },
+  kar: { n: 'Karla', d: 'Cobranza', i: 'Ka' },
+  dan: { n: 'Daniela', d: 'Contabilidad', i: 'Da' },
+  yun: { n: 'Yuneire', d: 'Contabilidad', i: 'Yu' },
+  yam: { n: 'Yamilet', d: 'Recursos Humanos', i: 'Ya' }
+};
+const ORDER = ['mar', 'vil', 'raq', 'kar', 'dan', 'yun', 'yam'];
+const TAG = { ley: 'Vence', int: 'Interno', prop: 'Por confirmar' };
+const HOLIDAYS = {};
+['2026-12-24', '2026-12-25', '2026-12-31',
+ '2027-01-01', '2027-02-08', '2027-02-09', '2027-03-25', '2027-03-26', '2027-04-19', '2027-05-01',
+ '2027-06-24', '2027-07-05', '2027-07-24', '2027-10-12', '2027-12-24', '2027-12-25', '2027-12-31'
+].forEach(function (k) { HOLIDAYS[k] = 'Feriado'; });
+const MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+function shift(k, n) { var d = fromKey(k); d.setDate(d.getDate() + n); return toKey(d); }
+function isBd(k) { var w = fromKey(k).getDay(); return w !== 0 && w !== 6 && !HOLIDAYS[k]; }
+function bdOnOrBefore(k) { while (!isBd(k)) k = shift(k, -1); return k; }
+function bdBefore(k) { return bdOnOrBefore(shift(k, -1)); }
+function nthBd(y, m, n) { var k = y + '-' + pad(m) + '-01', c = 0; for (;;) { if (isBd(k)) { c++; if (c === n) return k; } k = shift(k, 1); } }
+function lastBd(y, m) { return bdOnOrBefore(y + '-' + pad(m) + '-' + pad(new Date(y, m, 0).getDate())); }
+function minK(a, b) { return a < b ? a : b; }
+function maxK(a, b) { return a > b ? a : b; }
+
+const E = [];
+function add(d, who, k, t, x, time) { E.push({ d: d, who: who, k: k, t: t, x: x, time: time || '' }); }
+
+add('2026-11-13', ['dan', 'yun'], 'ley', 'Cierre contable de octubre',
+  'Integración contable (asientos de diario, amortizaciones y ajustes), estimación de cuentas incobrables y LOCTI. El límite es el 15, que cae domingo. Se cumple hoy viernes.');
+add('2026-11-13', ['dan', 'yun', 'mar'], 'ley', 'Pagar el IVA de octubre, si hay monto a pagar',
+  'El pago vence el 15, que cae domingo, así que se paga hoy viernes. Antes de pagar, confirmar que la declaración de octubre ya fue presentada. Mariella autoriza el pago.');
+add('2026-11-13', ['kar'], 'prop', 'Entregar análisis de clientes de octubre',
+  'Antigüedad de saldos para que Contabilidad registre la estimación de incobrables de octubre.');
+
+['2026-11-20', '2026-11-27', '2026-12-04', '2026-12-11', '2026-12-18', '2026-12-23', '2026-12-30'].forEach(function (d) {
+  add(d, ['dan', 'yun'], 'prop', 'Conciliación bancaria semanal',
+    'Cuentas bancarias operativas. Si se activan cajas, hacer el arqueo. En diciembre se adelanta por los feriados.');
+  add(d, ['kar'], 'prop', 'Reporte semanal de cobranza',
+    'Antigüedad de saldos a Contabilidad. Pedir a los clientes confirmación y soporte de las transferencias sin identificar.');
+  add(d, ['mar'], 'prop', 'Revisar partidas sin identificar',
+    'Ninguna transferencia puede quedar más de 30 días sin clasificar ni abonarse a cuentas genéricas como Otros Ingresos Diversos.');
+});
+
+add('2026-11-24', ['mar', 'raq', 'kar', 'dan', 'yun'], 'prop', 'Reunión de fechas de corte',
+  'Acordar la hora exacta del corte de ventas (el informe fija las 5:00 PM del último día hábil) y definir fecha y hora de corte de pagos, cobranzas y conciliación bancaria.');
+add('2026-11-30', ['raq'], 'int', 'Cierre de ventas y facturación',
+  'Después de esta hora no se emiten ni se anulan facturas, notas de crédito ni notas de débito de noviembre. Todo lo posterior pasa a diciembre. Es la base del IAE.', '5:00 PM');
+add('2026-12-01', ['raq', 'dan', 'yun'], 'prop', 'Entregar el cierre de ventas a Contabilidad',
+  'Listado de facturación cerrado y comprobantes de retención de IVA recibidos de clientes SPE.');
+add('2026-12-02', ['vil'], 'int', 'Cierre de recepción de compras y gastos',
+  'Último día para recibir facturas y gastos de noviembre. Cada una con orden de compra o servicio, nota de recepción, centro de costo por artículo y soporte físico y digital. Montos en bolívares, o bolívares y divisas, nunca solo divisas. Lo que llegue después va a diciembre.');
+add('2026-12-02', ['mar', 'raq', 'kar', 'dan', 'yun'], 'prop', 'Corte de pagos y cobranzas',
+  'Todos los cobros aplicados a los estados de cuenta y todos los pagos con comprobante y firma de autorización. La hora se define en la reunión del 24 de noviembre.');
+add('2026-12-03', ['dan', 'yun'], 'prop', 'Conciliación bancaria completa',
+  'Con el estado de cuenta bancario completo. No se valida si quedan transferencias sin identificar o cobros sin aplicar.');
+add('2026-12-03', ['mar', 'dan', 'yun'], 'prop', 'Resolver partidas de más de 30 días sin identificar',
+  'Contabilidad entrega la lista a Mariella para que se resuelva antes de cerrar los libros.');
+add('2026-12-01', ['dan', 'yun', 'mar', 'kar', 'vil'], 'prop', 'Estimación intermedia del IVA de noviembre',
+  'Con las ventas ya cerradas y las compras recibidas hasta hoy, Contabilidad calcula el IVA estimado: débito fiscal, crédito fiscal, retenciones de IVA recibidas y excedentes. Karla y Vilma reclaman hoy los comprobantes de retención y las facturas que falten. Mariella decide las gestiones de recuperación de créditos fiscales y retenciones antes de declarar.');
+add('2026-12-02', ['vil', 'dan', 'yun'], 'prop', 'Entregar listado de compras conformado',
+  'De Compras a Contabilidad, con el expediente de soporte de cada factura. Contabilidad lo necesita para cerrar el Libro de Compras el jueves 3.');
+add('2026-12-03', ['dan', 'yun'], 'prop', 'Cerrar Libros de Compras y Ventas',
+  'Libros revisados y cerrados, con el IVA calculado y listo para declarar. Los comprobantes de retención de clientes SPE ya deben estar incluidos.');
+add('2026-12-04', ['dan', 'yun', 'mar'], 'int', 'Presentar la declaración de IVA de noviembre',
+  'Aunque el plazo legal llega al 15, la planilla de IVA es requisito para declarar el IAE, que vence el 7. Por eso se presenta hoy. Si hay monto a pagar, se paga hasta el 15.');
+add('2026-12-07', ['mar', 'dan', 'yun'], 'ley', 'Límite real: IAE (municipal) con la planilla de IVA',
+  'La ordenanza exige declarar dentro de los primeros 7 días del mes y pide la planilla de IVA como recaudo. Si el IVA no se presentó el viernes 4, hoy es el último día para presentarlo y declarar el IAE. La base son los ingresos brutos de noviembre, que deben coincidir con las ventas declaradas al SENIAT.');
+add('2026-12-09', ['yam'], 'ley', 'Retenciones de ISLR de trabajadores',
+  'Expediente de retenciones acumuladas en nómina. Se presenta aunque el monto sea cero. El límite es antes del 10, por eso se apunta al 9.');
+add('2026-12-11', ['kar'], 'prop', 'Entregar análisis de clientes de noviembre',
+  'Para la estimación de incobrables que vence el 15.');
+add('2026-12-15', ['dan', 'yun', 'mar'], 'ley', 'Pagar el IVA de noviembre, si hay monto a pagar',
+  'Último día para pagar el impuesto declarado el 4 de diciembre. Si la fecha cae en feriado bancario, se paga el día hábil anterior. Mariella autoriza el pago.');
+add('2026-12-15', ['dan', 'yun'], 'ley', 'Cierre contable de noviembre',
+  'Integración contable (diario, amortizaciones y ajustes), estimación de incobrables y LOCTI.');
+add('2026-12-30', ['raq'], 'prop', 'Cierre de ventas de diciembre',
+  'El 31 es feriado, así que el último día hábil del mes es el 30. Confirmar con Contabilidad. El IVA y el IAE de diciembre vencen el jueves 7 de enero de 2027 y con los feriados quedan solo 4 días hábiles (4 al 7 de enero), por lo que conviene adelantar la estimación del IVA.', '5:00 PM');
+
+/* Ciclo mensual de 2027: las fechas se calculan con los días hábiles y los feriados. */
+function cycle(y, m) {
+  var py = m === 1 ? y - 1 : y, pm = m === 1 ? 12 : m - 1;
+  var P = MES[pm - 1] + (pm === 12 ? ' de ' + py : '');
+  var key = function (d) { return y + '-' + pad(m) + '-' + pad(d); };
+  var L = bdOnOrBefore(key(7));
+  var D = minK(nthBd(y, m, 4), bdBefore(L));
+  var B = minK(nthBd(y, m, 3), bdBefore(D));
+  var E1 = nthBd(y, m, 1);
+  var PC = maxK(E1, minK(nthBd(y, m, 2), bdBefore(B)));
+  var tight = nthBd(y, m, 4) > bdBefore(L) || B <= PC;
+  var TN = tight ? ' Este mes quedan pocos días hábiles por los feriados, así que varios pasos caen el mismo día o en días seguidos.' : '';
+  var P15 = bdOnOrBefore(key(15));
+  var K = minK(bdOnOrBefore(key(11)), bdBefore(P15));
+  add(E1, ['dan', 'yun', 'mar', 'kar', 'vil'], 'prop', 'Estimación intermedia del IVA de ' + P,
+    'Con las ventas ya cerradas y las compras recibidas hasta hoy, Contabilidad calcula el IVA estimado: débito fiscal, crédito fiscal, retenciones de IVA recibidas y excedentes. Karla y Vilma reclaman hoy los comprobantes de retención y las facturas que falten. Mariella decide las gestiones de recuperación de créditos fiscales y retenciones antes de declarar.' + TN);
+  add(E1, ['raq', 'dan', 'yun'], 'prop', 'Entregar el cierre de ventas a Contabilidad',
+    'Listado de facturación cerrado de ' + P + ' y comprobantes de retención de IVA recibidos de clientes SPE.');
+  add(PC, ['vil'], 'int', 'Cierre de recepción de compras y gastos',
+    'Último día para recibir facturas y gastos de ' + P + '. Cada una con orden de compra o servicio, nota de recepción, centro de costo por artículo y soporte físico y digital. Montos en bolívares, o bolívares y divisas, nunca solo divisas. Lo que llegue después va al mes siguiente.');
+  add(PC, ['mar', 'raq', 'kar', 'dan', 'yun'], 'prop', 'Corte de pagos y cobranzas',
+    'Todos los cobros aplicados a los estados de cuenta y todos los pagos con comprobante y firma de autorización. La hora la define Administración.');
+  add(PC, ['vil', 'dan', 'yun'], 'prop', 'Entregar listado de compras conformado',
+    'De Compras a Contabilidad, con el expediente de soporte de cada factura, para cerrar el Libro de Compras.');
+  add(B, ['dan', 'yun'], 'prop', 'Cerrar Libros de Compras y Ventas',
+    'Libros revisados y cerrados, con el IVA calculado y listo para declarar. Los comprobantes de retención de clientes SPE ya deben estar incluidos.');
+  add(B, ['dan', 'yun'], 'prop', 'Conciliación bancaria completa',
+    'Con el estado de cuenta bancario completo. No se valida si quedan transferencias sin identificar o cobros sin aplicar.');
+  add(B, ['mar', 'dan', 'yun'], 'prop', 'Resolver partidas de más de 30 días sin identificar',
+    'Contabilidad entrega la lista a Mariella para que se resuelva antes de cerrar los libros.');
+  add(D, ['dan', 'yun', 'mar'], 'int', 'Presentar la declaración de IVA de ' + P,
+    'Aunque el plazo legal llega al 15, la planilla de IVA es requisito para declarar el IAE, que vence el 7. Por eso se presenta antes. Si hay monto a pagar, se paga hasta el 15.' + TN);
+  add(L, ['mar', 'dan', 'yun'], 'ley', 'Límite real: IAE (municipal) con la planilla de IVA',
+    'La ordenanza exige declarar dentro de los primeros 7 días del mes y pide la planilla de IVA como recaudo. Si el IVA no se presentó antes, hoy es el último día para presentarlo y declarar el IAE. La base son los ingresos brutos de ' + P + ', que deben coincidir con las ventas declaradas al SENIAT.');
+  add(bdOnOrBefore(key(9)), ['yam'], 'ley', 'Retenciones de ISLR de trabajadores',
+    'Expediente de retenciones acumuladas en nómina. Se presenta aunque el monto sea cero. El límite es antes del 10, por eso se apunta al 9 o al día hábil anterior.');
+  add(K, ['kar'], 'prop', 'Entregar análisis de clientes de ' + P,
+    'Antigüedad de saldos para la estimación de incobrables que vence el 15.');
+  add(P15, ['dan', 'yun', 'mar'], 'ley', 'Pagar el IVA de ' + P + ', si hay monto a pagar',
+    'Último día para pagar el impuesto ya declarado. Si el 15 es feriado bancario o fin de semana, se paga el día hábil anterior. Mariella autoriza el pago.');
+  add(P15, ['dan', 'yun'], 'ley', 'Cierre contable de ' + P,
+    'Integración contable (diario, amortizaciones y ajustes), estimación de incobrables y LOCTI.');
+}
+function salesClose(y, m) {
+  var k = lastBd(y, m), last = y + '-' + pad(m) + '-' + pad(new Date(y, m, 0).getDate());
+  var P = MES[m - 1];
+  add(k, ['raq'], 'int', 'Cierre de ventas y facturación de ' + P,
+    'Después de esta hora no se emiten ni se anulan facturas, notas de crédito ni notas de débito de ' + P + '. Todo lo posterior pasa al mes siguiente. Es la base del IAE.' +
+    (k !== last ? ' El último día hábil del mes es el ' + fromKey(k).getDate() + '.' : '') +
+    (m === 12 ? ' El IVA y el IAE de diciembre vencen en los primeros días de enero de 2028. Conviene adelantar la estimación y revisar los feriados.' : ''), '5:00 PM');
+}
+for (var mm = 1; mm <= 12; mm++) { cycle(2027, mm); salesClose(2027, mm); }
+(function () {
+  var d = new Date(2027, 0, 1);
+  while (d.getDay() !== 5) d.setDate(d.getDate() + 1);
+  while (d.getFullYear() === 2027) {
+    var k = bdOnOrBefore(toKey(d));
+    if (k >= '2027-01-01') {
+      add(k, ['dan', 'yun'], 'prop', 'Conciliación bancaria semanal',
+        'Cuentas bancarias operativas. Si se activan cajas, hacer el arqueo. Si el viernes es feriado, se adelanta al día hábil anterior.');
+      add(k, ['kar'], 'prop', 'Reporte semanal de cobranza',
+        'Antigüedad de saldos a Contabilidad. Pedir a los clientes confirmación y soporte de las transferencias sin identificar.');
+      add(k, ['mar'], 'prop', 'Revisar partidas sin identificar',
+        'Ninguna transferencia puede quedar más de 30 días sin clasificar ni abonarse a cuentas genéricas como Otros Ingresos Diversos.');
+    }
+    d.setDate(d.getDate() + 7);
+  }
+})();
+
+const KORD = { ley: 0, int: 1, prop: 2 };
+E.sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : KORD[a.k] - KORD[b.k]; });
+
+const RUT = {
+  mar: [
+    ['Cada mes', 'Decidir tras la estimación del IVA qué gestiones de recuperación de créditos fiscales y retenciones se hacen antes de declarar.'],
+    ['Cada mes', 'Autorizar el pago del IVA hasta el día 15, si hay monto a pagar.'],
+    ['Siempre', 'Hacer cumplir la separación de funciones: quien registra el cobro, quien factura y quien emite el recibo de caja son personas distintas.'],
+    ['Siempre', 'Firmar la autorización de cada respaldo de transferencia. Quien autoriza no es quien registra.'],
+    ['Cada semana', 'Revisar las partidas sin identificar. Las de más de 30 días se resuelven.'],
+    ['Cada mes', 'Verificar que cada departamento entregó a tiempo. Lo que llega tarde pasa al período siguiente.']
+  ],
+  vil: [
+    ['Cada mes', 'Tras la estimación del IVA, reclamar a los proveedores las facturas que falten para aprovechar el crédito fiscal.'],
+    ['Cada día', 'Consultar en el SENIAT la condición fiscal de cada proveedor nuevo y confirmar que el sistema calcule la retención de IVA.'],
+    ['Cada día', 'Armar el expediente de cada factura: orden de compra o servicio, nota de recepción, centro de costo por artículo, soporte físico y digital.'],
+    ['Siempre', 'Los montos van en bolívares, o en bolívares y divisas. Nunca solo en divisas.'],
+    ['Cada mes', 'Recibir facturas hasta el cierre de recepción de cada mes, normalmente el segundo día hábil. Las que lleguen después se procesan en el período siguiente.']
+  ],
+  raq: [
+    ['Cada día', 'Consultar en el SENIAT si cada cliente es Sujeto Pasivo Especial o No Especial, y actualizar su ficha.'],
+    ['Cada día', 'Marcar en la ficha a los clientes agentes de retención, para que Cobranza sepa quiénes deben entregar el comprobante.'],
+    ['Siempre', 'No emitir ni anular facturas, notas de crédito o débito del mes cerrado después del corte.'],
+    ['Siempre', 'Mantener separadas las funciones de cobro, facturación y recibos de caja.'],
+    ['Cada mes', 'Entregar a Contabilidad el listado de facturación cerrado y los comprobantes de retención de IVA.']
+  ],
+  kar: [
+    ['Cada mes', 'Tras la estimación del IVA, reclamar a los clientes SPE los comprobantes de retención de IVA que falten.'],
+    ['Cada día', 'Aplicar los cobros a los estados de cuenta de cada cliente. Sin cobros aplicados no se valida la conciliación.'],
+    ['Cada día', 'Exigir el comprobante de retención de IVA a los clientes SPE antes de ejecutar el cobro.'],
+    ['Cada semana', 'Revisar la antigüedad de saldos y enviar el reporte a Contabilidad.'],
+    ['Cada semana', 'Pedir confirmación y soporte a los clientes con transferencias sin identificar.'],
+    ['Siempre', 'Respaldar cada cobro con su soporte, firmado, en archivo físico y digital.']
+  ],
+  dan: [
+    ['Cada mes', 'Hacer la estimación intermedia del IVA el primer día hábil tras el cierre de ventas.'],
+    ['Cada mes', 'Presentar la declaración de IVA antes del día 7, porque es requisito para declarar el IAE. El pago, si lo hay, vence el día 15.'],
+    ['Cada semana', 'Conciliar las cuentas bancarias operativas. Hacer arqueos si se activan cajas.'],
+    ['Siempre', 'Mantener el archivo cruzado de comprobantes de ingresos y egresos, sin notas de trabajo internas dentro del archivo oficial.'],
+    ['Siempre', 'No validar la conciliación si hay transferencias sin identificar o cobros sin aplicar.'],
+    ['Cada mes', 'Escalar a Mariella toda partida de más de 30 días sin identificar.'],
+    ['Cada mes', 'Verificar que los ingresos brutos del IAE coincidan con las ventas declaradas al SENIAT.']
+  ],
+  yun: [
+    ['Cada mes', 'Hacer la estimación intermedia del IVA el primer día hábil tras el cierre de ventas.'],
+    ['Cada mes', 'Presentar la declaración de IVA antes del día 7, porque es requisito para declarar el IAE. El pago, si lo hay, vence el día 15.'],
+    ['Cada semana', 'Conciliar las cuentas bancarias operativas. Hacer arqueos si se activan cajas.'],
+    ['Siempre', 'Mantener el archivo cruzado de comprobantes de ingresos y egresos, sin notas de trabajo internas dentro del archivo oficial.'],
+    ['Siempre', 'No validar la conciliación si hay transferencias sin identificar o cobros sin aplicar.'],
+    ['Cada mes', 'Escalar a Mariella toda partida de más de 30 días sin identificar.'],
+    ['Cada mes', 'Verificar que los ingresos brutos del IAE coincidan con las ventas declaradas al SENIAT.']
+  ],
+  yam: [
+    ['Siempre', 'Recibo de pago de salario firmado por el trabajador (Art. 106 LOTTT).'],
+    ['Siempre', 'Recibo de beneficios no salariales firmado por el trabajador (Art. 105 LOTTT).'],
+    ['Siempre', 'Acta de entrega de uniformes y EPP firmada por cada trabajador. Hace deducible el gasto en el ISLR.'],
+    ['Cada mes', 'Generar y consolidar el expediente de retenciones de ISLR, aun con saldo cero.'],
+    ['Según calendario oficial', 'Aportes al Fondo de Pensiones. Confirmar las fechas con Contabilidad.']
+  ]
+};
+const GROUPS = ['Cada día', 'Cada semana', 'Cada mes', 'Siempre', 'Según calendario oficial'];
+
+/* Estado */
+function load(key, fallback) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } }
+function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+
+var done = new Set(load('faveca-done', []));
+var who = load('faveca-who', 'all');
+if (who !== 'all' && !PEOPLE[who]) who = 'all';
+var view = 'mes';
+var showPast = false;
+
+function pad(n) { return (n < 10 ? '0' : '') + n; }
+function toKey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function fromKey(k) { var p = k.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+var TODAY = toKey(new Date());
+function diffDays(k) { return Math.round((fromKey(k) - fromKey(TODAY)) / 86400000); }
+function label(k) { return fromKey(k).toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', ''); }
+function rel(k) {
+  var n = diffDays(k);
+  if (n === 0) return 'hoy';
+  if (n === 1) return 'mañana';
+  if (n === -1) return 'ayer';
+  return n > 0 ? 'en ' + n + ' días' : 'hace ' + (-n) + ' días';
+}
+function mine(e) { return who === 'all' || e.who.indexOf(who) >= 0; }
+function eventsOn(k) { return E.filter(function (e) { return e.d === k && mine(e); }); }
+function eid(e) { return e.d + '|' + e.t + '|' + e.who.join(''); }
+
+var MIN = '2026-11', MAX = '2027-12';
+var ahead = 45;
+var inRange = TODAY >= '2026-11-01' && TODAY <= '2027-12-31';
+var sel = (function () {
+  var start = inRange ? TODAY : '2026-11-13';
+  var hit = E.filter(function (e) { return e.d >= start && mine(e); })[0];
+  return hit ? hit.d : start;
+})();
+var cur = sel.slice(0, 7);
+if (cur < MIN) cur = MIN;
+if (cur > MAX) cur = MAX;
+function shiftMonth(c, n) {
+  var y = +c.slice(0, 4), m = +c.slice(5, 7) - 1 + n;
+  y += Math.floor(m / 12); m = ((m % 12) + 12) % 12;
+  return y + '-' + pad(m + 1);
+}
+function monthList() { var out = [], c = MIN; while (c <= MAX) { out.push(c); c = shiftMonth(c, 1); } return out; }
+function monthName(c) {
+  var s = new Date(+c.slice(0, 4), +c.slice(5, 7) - 1, 1).toLocaleDateString('es', { month: 'long', year: 'numeric' });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+function firstDayOf(c) {
+  var hit = E.filter(function (e) { return e.d.slice(0, 7) === c && mine(e); })[0];
+  return hit ? hit.d : c + '-01';
+}
+
+/* Piezas */
+function avatar(k) { return '<span class="av" style="--pc:var(--p-' + k + ')">' + PEOPLE[k].i + '</span>'; }
+
+function evCard(e, showRel) {
+  var id = eid(e), dn = done.has(id);
+  var names = e.who.map(function (k) { return '<span class="who">' + avatar(k) + PEOPLE[k].n + '</span>'; }).join('');
+  return '<article class="ev ' + e.k + (dn ? ' is-done' : '') + '">' +
+    '<div class="ev-top"><span class="tag ' + e.k + '">' + TAG[e.k] + '</span>' +
+    (e.time ? '<span class="time">' + e.time + '</span>' : '') +
+    (showRel ? '<span class="dl">' + rel(e.d) + '</span>' : '') + '</div>' +
+    '<h3>' + e.t + '</h3><p>' + e.x + '</p>' +
+    '<div class="ev-foot"><div class="whos">' + names + '</div>' +
+    '<button class="done-btn" type="button" data-done="' + encodeURIComponent(id) + '" aria-pressed="' + dn + '">' + (dn ? 'Listo' : 'Marcar listo') + '</button></div></article>';
+}
+
+function renderChips() {
+  var h = '<button class="chip all" type="button" data-who="all" aria-pressed="' + (who === 'all') + '">Todos</button>';
+  ORDER.forEach(function (k) {
+    h += '<button class="chip" type="button" data-who="' + k + '" aria-pressed="' + (who === k) + '" style="--pc:var(--p-' + k + ')">' +
+      avatar(k) + '<span>' + PEOPLE[k].n + ' <small>' + PEOPLE[k].d + '</small></span></button>';
+  });
+  document.getElementById('chips').innerHTML = h;
+  document.querySelectorAll('#tabs .tab').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.view === view)); });
+}
+
+function renderNext() {
+  var el = document.getElementById('next');
+  var list = E.filter(function (e) { return e.d >= TODAY && mine(e); });
+  var hit = list.filter(function (e) { return e.k === 'ley'; })[0] || list[0];
+  if (!hit) { el.hidden = true; return; }
+  el.hidden = false;
+  el.dataset.goto = hit.d;
+  el.innerHTML = '<span class="lbl">' + (hit.k === 'ley' ? 'Próximo vencimiento' : 'Próxima tarea') + '</span>' +
+    '<span class="ttl">' + hit.t + ' · ' + hit.who.map(function (k) { return PEOPLE[k].n; }).join(', ') + '</span>' +
+    '<span class="when">' + label(hit.d) + ' · ' + rel(hit.d) + '</span>';
+}
+
+function renderMes() {
+  var y = +cur.slice(0, 4), month = +cur.slice(5, 7), first = new Date(y, month - 1, 1);
+  var offset = (first.getDay() + 6) % 7;
+  var days = new Date(y, month, 0).getDate();
+  var name = first.toLocaleDateString('es', { month: 'long' });
+  var cells = '';
+  for (var i = 0; i < offset; i++) cells += '<span class="cell blank"></span>';
+  for (var d = 1; d <= days; d++) {
+    var k = y + '-' + pad(month) + '-' + pad(d);
+    var evs = eventsOn(k);
+    var people = [];
+    evs.forEach(function (e) { e.who.forEach(function (p) { if ((who === 'all' || p === who) && people.indexOf(p) < 0) people.push(p); }); });
+    var dots = people.map(function (p) { return '<span class="dot" style="--pc:var(--p-' + p + ')"></span>'; }).join('');
+    var lines = evs.slice(0, 2).map(function (e) { return '<span>' + e.t + '</span>'; }).join('') + (evs.length > 2 ? '<span class="more">+' + (evs.length - 2) + ' más</span>' : '');
+    var hasLey = evs.some(function (e) { return e.k === 'ley'; });
+    var cls = 'cell' + (k === TODAY ? ' today' : '') + (k === sel ? ' sel' : '') + (HOLIDAYS[k] ? ' holiday' : '');
+    cells += '<button type="button" class="' + cls + '" data-day="' + k + '" aria-label="' + label(k) + ', ' + evs.length + ' tareas' + (HOLIDAYS[k] ? ', feriado' : '') + '">' +
+      '<span class="n">' + d + '</span>' + (hasLey ? '<span class="flag"></span>' : '') +
+      (HOLIDAYS[k] ? '<span class="hol">Feriado</span>' : '') +
+      '<span class="dots">' + dots + '</span><span class="lines">' + lines + '</span></button>';
+  }
+  var evs = eventsOn(sel);
+  var detail = '<section class="day" id="day"><h2>' + label(sel) + '</h2><p class="sub">' + rel(sel) + (HOLIDAYS[sel] ? ' · Feriado' : '') + '</p>';
+  if (evs.length) {
+    detail += evs.map(function (e) { return evCard(e, false); }).join('');
+  } else {
+    var nx = E.filter(function (e) { return e.d > sel && mine(e); })[0];
+    detail += '<div class="empty"><span>' + (HOLIDAYS[sel] ? 'Día feriado.' : 'Sin tareas este día' + (who === 'all' ? '.' : ' para ' + PEOPLE[who].n + '.')) + '</span>' +
+      (nx ? '<button class="link" type="button" data-day="' + nx.d + '" data-cur="' + nx.d.slice(0, 7) + '">Ir a la próxima: ' + label(nx.d) + '</button>' : '') + '</div>';
+  }
+  detail += '</section>';
+  var opts = monthList().map(function (c) { return '<option value="' + c + '"' + (c === cur ? ' selected' : '') + '>' + monthName(c) + '</option>'; }).join('');
+  return '<div class="mes"><div class="cal"><div class="cal-head"><h2 style="text-transform:capitalize">' + name + ' ' + y + '</h2>' +
+    '<div class="seg"><button type="button" data-nav="-1" aria-label="Mes anterior"' + (cur <= MIN ? ' disabled' : '') + '>‹</button>' +
+    (inRange ? '<button type="button" data-nav="0">Hoy</button>' : '') +
+    '<button type="button" data-nav="1" aria-label="Mes siguiente"' + (cur >= MAX ? ' disabled' : '') + '>›</button>' +
+    '<select class="msel" id="msel" aria-label="Ir a un mes">' + opts + '</select></div></div>' +
+    '<div class="dow"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div>' +
+    '<div class="grid">' + cells + '</div>' +
+    '<div class="legend"><span><i></i>Hay un vencimiento legal ese día</span><span>Hoy: círculo azul</span><span>Feriado: casilla gris</span></div></div>' + detail + '</div>';
+}
+
+function renderAgenda() {
+  var limit = shift(TODAY, ahead);
+  var list = E.filter(function (e) { return mine(e) && (showPast || e.d >= TODAY) && e.d <= limit; });
+  var more = E.some(function (e) { return mine(e) && e.d > limit; });
+  var byDay = {};
+  list.forEach(function (e) { (byDay[e.d] = byDay[e.d] || []).push(e); });
+  var h = '<div class="agenda"><button class="link toggle" type="button" data-past="1">' + (showPast ? 'Ocultar fechas pasadas' : 'Mostrar fechas pasadas') + '</button>';
+  var keys = Object.keys(byDay).sort();
+  if (!keys.length) h += '<div class="empty">No hay tareas próximas con este filtro.</div>';
+  keys.forEach(function (k) {
+    h += '<section class="grp' + (k < TODAY ? ' past' : '') + (k === TODAY ? ' is-today' : '') + '"><h2>' + label(k) + '<small>' + rel(k) + (HOLIDAYS[k] ? ' · Feriado' : '') + '</small></h2>' +
+      byDay[k].map(function (e) { return evCard(e, false); }).join('') + '</section>';
+  });
+  if (more) h += '<button class="link toggle" type="button" data-more="1">Mostrar 45 días más</button>';
+  h += '<div class="note"><h2>Por confirmar con la Lcda. Martínez</h2><ul>' +
+    '<li>Las tareas marcadas "Por confirmar" tienen fechas propuestas que el informe no define.</li>' +
+    '<li>La estimación del 1 de diciembre y la declaración de IVA del 4 de diciembre son fechas propuestas para cumplir el límite real del 7.</li>' +
+    '<li>Las fechas de los aportes al Fondo de Pensiones dependen del calendario oficial.</li>' +
+    '<li>Cómo tratan el SENIAT y la alcaldía los vencimientos que caen en fin de semana o feriado.</li>' +
+    '<li>Los feriados de 2027 usados son Año Nuevo, Carnaval (8 y 9 de febrero), Semana Santa (25 y 26 de marzo), 19 de abril, 1 de mayo, 24 de junio, 5 y 24 de julio, 12 de octubre y 24, 25 y 31 de diciembre. Falta cruzarlos con el calendario bancario oficial.</li></ul></div>' +
+    '<div class="note"><h2>Cómo se calculan las fechas de cada mes</h2><ul>' +
+    '<li>Límite real del IVA y del IAE: el día 7. Si cae en fin de semana o feriado, se adelanta al día hábil anterior.</li>' +
+    '<li>Declaración de IVA: el día hábil anterior al límite, y a más tardar el cuarto día hábil del mes.</li>' +
+    '<li>Pago del IVA, cierre contable, incobrables y LOCTI: el día 15, o el día hábil anterior si no es hábil.</li>' +
+    '<li>ISLR de nómina: el día 9, o el día hábil anterior. Controles semanales: cada viernes, o el día hábil anterior.</li>' +
+    '<li>Cuando hay feriados, los pasos de cierre se juntan en pocos días y la estimación del IVA lo avisa.</li></ul></div></div>';
+  return h;
+}
+
+function renderRutinas() {
+  var keys = who === 'all' ? ORDER : [who];
+  var h = '<div class="rut">';
+  keys.forEach(function (k) {
+    var rows = RUT[k] || [];
+    h += '<section class="pc" style="--pc:var(--p-' + k + ')"><div class="pc-head">' + avatar(k) + '<div><h2>' + PEOPLE[k].n + '</h2><span>' + PEOPLE[k].d + '</span></div></div>';
+    GROUPS.forEach(function (g) {
+      var items = rows.filter(function (r) { return r[0] === g; });
+      if (!items.length) return;
+      h += '<div class="rg"><h3>' + g + '</h3><ul>' + items.map(function (r) { return '<li>' + r[1] + '</li>'; }).join('') + '</ul></div>';
+    });
+    h += '</section>';
+  });
+  return h + '</div>';
+}
+
+function render() {
+  renderChips();
+  renderNext();
+  var m = document.getElementById('main');
+  m.innerHTML = view === 'mes' ? renderMes() : view === 'agenda' ? renderAgenda() : renderRutinas();
+}
+
+document.addEventListener('click', function (ev) {
+  var t = ev.target.closest('button');
+  if (!t) return;
+  if (t.dataset.who) { who = t.dataset.who; save('faveca-who', who); render(); return; }
+  if (t.dataset.view) { view = t.dataset.view; render(); return; }
+  if (t.dataset.done) {
+    var id = decodeURIComponent(t.dataset.done);
+    if (done.has(id)) done.delete(id); else done.add(id);
+    save('faveca-done', Array.from(done));
+    render();
+    return;
+  }
+  if (t.dataset.past) { showPast = !showPast; render(); return; }
+  if (t.id === 'next') { sel = t.dataset.goto; cur = sel.slice(0, 7); view = 'mes'; render(); return; }
+  if (t.dataset.day) {
+    sel = t.dataset.day;
+    if (t.dataset.cur) cur = t.dataset.cur;
+    render();
+    var focusEl = document.querySelector('[data-day="' + sel + '"].cell');
+    if (focusEl) focusEl.focus({ preventScroll: true });
+    var dayEl = document.getElementById('day');
+    if (dayEl && window.innerWidth < 1000) dayEl.scrollIntoView({ block: 'nearest' });
+    return;
+  }
+  if (t.dataset.nav !== undefined) {
+    var n = +t.dataset.nav;
+    if (n === 0) { sel = TODAY; cur = TODAY.slice(0, 7); }
+    else { cur = shiftMonth(cur, n); sel = firstDayOf(cur); }
+    render();
+    return;
+  }
+  if (t.dataset.more) { ahead += 45; render(); return; }
+});
+document.addEventListener('change', function (ev) {
+  if (ev.target.id === 'msel') { cur = ev.target.value; sel = firstDayOf(cur); render(); }
+});
+
+render();
+</script>
+
+</body></html>
